@@ -14,6 +14,15 @@ const app = express()
 app.use(cors())
 app.use(bodyParser.json())
 
+// NOT WORKING Middleware to check if database is running or down 
+app.use((req, res, next) => {
+  if (mongoose.connection.readyState === 1) {
+    next()
+  } else {
+    res.status(503).json({ error: 'Service unavailable' })
+  }
+})
+
 // Set up database collection and connect to it
 const mongoUrl = process.env.MONGO_URL || "mongodb://localhost/animals"
 mongoose.connect(mongoUrl, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -45,7 +54,7 @@ app.get('/', (req, res) => {
 })
 
 // Find one animal
-app.get('/:name', (req, res) => {
+/* app.get('/:name', (req, res) => {
   Animal.findOne({ name: req.params.name }).then(animal => {
     if (animal) {
       res.json(animal)
@@ -53,7 +62,25 @@ app.get('/:name', (req, res) => {
       res.status(404).json({ error: 'Not found' })
     }
   })
+}) */
+
+// Find one animal
+// With async await
+// 400 animal not found
+// NOT WORKING 404 How do you define the bad request input? 
+app.get('/:name', async (req, res) => {
+  try {
+    const animal = await Animal.findOne({ name: req.params.name })
+    if (animal) {
+      res.json(animal)
+    } else {
+      res.status(404).json({ error: 'Not found' })
+    }
+  } catch (err) {
+    res.status(400).json({ error: 'Invalid input' })
+  }
 })
+
 
 /* // Get an animal with a certain age
 app.get('/:age', (req, res) => {
